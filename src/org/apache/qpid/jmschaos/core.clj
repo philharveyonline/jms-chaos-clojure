@@ -23,6 +23,7 @@
   (println "Deleted queue"))
   
 (defn -main [& args]
+  (println "Starting...")
   (delete-file-recursively (get-system-property "QPID_WORK") true)
   
   (let [options (new BrokerOptions)
@@ -39,13 +40,18 @@
             queue (.createQueue session queue-name)]
         (try
           (create-queue)
-          (let [producer (.createProducer session queue)
-                message (.createTextMessage session "hello world")]
-            (.send producer message)
-            (println "Message sent"))
-          (let [consumer (.createConsumer session queue)]
-            (.start connection)
-            (println (.receive consumer 1000)))
+          (def producer-future (future
+                                 (let [producer (.createProducer session queue)
+                                       message (.createTextMessage session "hello world")]
+                                   (.send producer message)
+                                   (println "Message sent inside future")
+                                   message)))
+          (def consumer-future (future
+                                 (let [consumer (.createConsumer session queue)]
+                                   (.start connection)
+                                   (.receive consumer 1000))))
+          (println "Producer produced: " (.getJMSMessageID @producer-future))
+          (println "Consumer received: " (.getJMSMessageID @consumer-future))
           (finally (delete-queue))))
       (finally
         (println "About to shut down broker")
