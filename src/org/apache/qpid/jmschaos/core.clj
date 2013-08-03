@@ -35,15 +35,17 @@
     (.send producer message)
     message))
 
-(defn do-participant
-  "Synchronously participates, collecting messages, until the deadline"
-  [participate-fn deadline]
-  (loop [messages (list)]
-    (let [new-messages (cons (participate-fn) messages)]
-      (java.lang.Thread/sleep (rand-int 400))
-      (if (> (java.lang.System/currentTimeMillis) deadline)
-        new-messages
-        (recur new-messages))))) 
+(defn do-for-at-most
+  "Synchronously participates, remembering sent/received messages, until the at most duration ms have passed"
+  [jms-fn duration]
+
+  (let [deadline (+ (rand-int duration) (java.lang.System/currentTimeMillis))]
+    (loop [messages (list)]
+      (let [new-messages (cons (jms-fn) messages)]
+        (java.lang.Thread/sleep (rand-int 400))
+        (if (> (java.lang.System/currentTimeMillis) deadline)
+          new-messages
+          (recur new-messages))))))
 
 
 (defn -main [& args]
@@ -64,17 +66,18 @@
           (create-queue)
           (.start connection)
           
-          (let [deadline (+ (java.lang.System/currentTimeMillis) 3000)]
-            (doseq [producer-future (take 3
-              (repeatedly
-                #(future
-                  (let [session (.createSession connection false Session/AUTO_ACKNOWLEDGE)
-                        producer (.createProducer session (.createQueue session queue-name))]
-                    (do-participant (fn [] (produce-message session producer)) deadline)))))]
-              (println @producer-future)))
-            
+          (let [duration 5000]
+            (letfn [(producer-future-fn []
+                    (future
+                      (let [session (.createSession connection false Session/AUTO_ACKNOWLEDGE)
+                            producer (.createProducer session (.createQueue session queue-name))]
+                        (do-for-at-most (fn [] (produce-message session producer)) duration))))]
+
+              (doseq [producer-future (doall (take 3 (repeatedly producer-future-fn)))]
+                (println "Produced: " (count @producer-future)))))
+
           (finally (delete-queue))))
-      
+
       (finally
         (println "About to shut down broker")
         (.shutdown broker)))))
