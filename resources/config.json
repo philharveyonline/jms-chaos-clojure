@@ -1,0 +1,56 @@
+{
+  "authenticationproviders" : [ {
+    "id" : "28432819-8d8a-4916-89f2-d70933dc0d94",
+    "name" : "my-anonymous-provider",
+    "type" : "Anonymous"
+  } ],
+  "defaultVirtualHost" : "default",
+  "id" : "1a2870b3-1578-43cd-a975-f57efdd5366a",
+  "modelVersion" : "1.0",
+  "name" : "Chaos-Broker",
+  "plugins" : [ {
+    "id" : "9d5b2f1b-f4e2-42a5-a785-8ce4cffe37c2",
+    "name" : "httpManagement",
+    "pluginType" : "MANAGEMENT-HTTP"
+  }, {
+    "id" : "fcc2125e-8c83-4f95-a3af-b335add25bff",
+    "name" : "jmxManagement",
+    "pluginType" : "MANAGEMENT-JMX"
+  } ],
+  "ports" : [ {
+    "authenticationProvider" : "my-anonymous-provider",
+    "bindingAddress" : "*",
+    "id" : "9a0a9c4d-a2ed-42a6-a9e0-cddd3b814abb",
+    "name" : "AMQP",
+    "port" : 5672,
+    "protocols" : [ "AMQP_1_0", "AMQP_0_10", "AMQP_0_8", "AMQP_0_9", "AMQP_0_9_1" ],
+    "transports" : [ "TCP" ]
+  }, {
+    "authenticationProvider" : "my-anonymous-provider",
+    "id" : "c8788038-9c58-4b02-9b60-aeda4c6a5d1d",
+    "name" : "HTTP",
+    "port" : 8080,
+    "protocols" : [ "HTTP" ],
+    "transports" : [ "TCP" ]
+  }, {
+    "id" : "2ada0a2c-1343-4694-957e-4984b9b5a651",
+    "name" : "RMI_REGISTRY",
+    "port" : "8999",
+    "protocols" : [ "RMI" ]
+  }, {
+    "authenticationProvider" : "my-anonymous-provider",
+    "id" : "4777e00e-c0c1-4aa6-8ff3-e5c103405264",
+    "name" : "JMX_CONNECTOR",
+    "port" : 9099,
+    "protocols" : [ "JMX_RMI" ],
+    "transports" : [ "TCP" ]
+  } ],
+  "storeVersion" : 1,
+  "virtualhosts" : [ {
+    "id" : "3079e1f3-75a9-498b-83e3-9ac6238e7bf6",
+    "name" : "default",
+    "storePath" : "${qpid.work_dir}/derbystore/default",
+    "storeType" : "DERBY",
+    "type" : "STANDARD"
+  } ]
+}
