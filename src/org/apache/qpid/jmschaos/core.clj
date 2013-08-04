@@ -7,7 +7,7 @@
   (:use [clojure.contrib.java-utils ]))
 
 
-(def duration 5000)
+(def duration 10000)
 
 (def connection-factory (new AMQConnectionFactory "amqp://guest:guest@clientid/?brokerlist='tcp://localhost:5672'"))
   
@@ -23,7 +23,6 @@
   (client/put binding-url {:body "{}"} ))
 
 (defn delete-queue []
-  (println "About to delete queue")
   (client/delete binding-url)
   (client/delete queue-url)
   (println "Deleted queue"))
@@ -37,12 +36,9 @@
     
     (loop [messages (list)]
       (let [new-messages (cons (jms-fn) messages)]
-        (println "Called jms-fn. new-messages is: " (count new-messages))
         (java.lang.Thread/sleep (rand-int 400))
         (if (> (System/currentTimeMillis) deadline)
-          (do 
-            (println "Returnning from do-for-at-most: " new-messages)
-            new-messages)
+          new-messages
           (recur new-messages))))))
 
 (defn run-consumer [session queue]
@@ -59,16 +55,13 @@
 (defn produce [connection] 
   (Thread/sleep (rand-int (/ duration 10)))
   (with-open [session (.createSession connection false Session/AUTO_ACKNOWLEDGE)]
-    (let [ 
-      messages
       (do-for-at-most
         duration 
         (fn [] 
           (with-open [producer (.createProducer session (.createQueue session queue-name))]
             (do-for-at-most
               (/ duration 3)
-              (fn [] (produce-message session producer))))))]
-      messages)))
+              (fn [] (produce-message session producer))))))))
 
 (defn -main [& args]
   (println "Starting...")
@@ -79,32 +72,18 @@
     (try
       (.setInitialConfigurationLocation options (.toExternalForm (clojure.java.io/resource "config.json")))
       (.startup broker options)
+      (create-queue)
       
       (with-open [connection (.createConnection connection-factory)]
-        (create-queue)
         (.start connection)
         
-        (letfn [(producer-fn
-                  []
-                  (
-                    (Thread/sleep (rand-int (/ duration 10)))
-                    (with-open [session (.createSession connection false Session/AUTO_ACKNOWLEDGE)]
-                      (let [ 
-                        messages
-                        (do-for-at-most
-                          duration 
-                          (fn [] 
-                            (with-open [producer (.createProducer session (.createQueue session queue-name))]
-                              (do-for-at-most
-                                (/ duration 3)
-                                (fn [] (produce-message session producer))))))]
-                        messages))))]
-          
-          (producer-fn)
-          (println "got here")
-          ))
-          ; (comment (doseq [producer-future (doall (take 1 (repeatedly producer-future-fn)))]
-          ;  (println "Produced: " @producer-future)))))
+        (time
+        (doseq [producer-future (doall (take 5 (repeatedly
+                                                 (fn [] (future (produce connection))))))]
+          (println "Summary:"
+                   (count @producer-future)
+                   "producers produced"
+                   (count (flatten @producer-future)) "messages"))))
       
       (finally
         (delete-queue)
