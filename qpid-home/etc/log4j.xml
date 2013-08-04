@@ -21,56 +21,6 @@
  --><!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
 
 <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="null" threshold="null">
-    <appender class="org.apache.log4j.QpidCompositeRollingAppender" name="ArchivingFileAppender">
-        <!-- Ensure that logs always have the DatePattern appended to the filename.
-             DEFAULT IF NOT CONFIGURED: true -->
-        <param name="StaticLogFileName" value="true"/>
-        <param name="file" value="${QPID_WORK}/log/${logprefix}qpid${logsuffix}.log"/>
-        <!-- Style of rolling to use, by:
-             File Size(1)
-             Date(2)
-             Both(3)
-
-             When Date (or Both) is enabled then the value of DatePattern will determine
-             when the new file is made. e.g. a DatePattern of "'.'yyyy-MM-dd-HH-mm"
-             which includes minutes will cause a new backup file to be made every minute.
-
-             DEFAULT IF NOT CONFIGURED: 3 -->
-        <param name="RollingStyle" value="1"/>
-        <!-- Set the count direction:
-             Negative numbers mean backups are numbered <latest>, .0, .1, .2,..., .n
-             0 means backup is DatePattern stamped and followed with a Positive number
-                 if the DatePattern stamp clashes with other existing backups.
-             Positive numbers mean backups are numbered 0, 1, 2, ..., n, <latest>
-
-             DEFAULT IF NOT CONFIGURED: -1 -->
-        <param name="CountDirection" value="0"/>
-        <!-- Maximum File Size:
-             DEFAULT IF NOT CONFIGURED: 10MB -->
-        <param name="MaxFileSize" value="1MB"/>
-        <!-- Date Pattern:
-             DEFAULT IF NOT CONFIGURED: "'.'yyyy-MM-dd" -->
-        <param name="DatePattern" value="'.'yyyy-MM-dd-HH-mm"/>
-        <!-- Maximum number of backup files:
-              0 means no backups
-             -1 means infinite backups
-
-             DEFAULT IF NOT CONFIGURED: 0 -->
-        <param name="MaxSizeRollBackups" value="-1"/>
-        <!-- Compress(gzip) the backup files to the backup location:
-             DEFAULT IF NOT CONFIGURED: FALSE -->
-        <param name="CompressBackupFiles" value="true"/>
-        <!-- Compress the backup files using a second thread:
-             DEFAULT IF NOT CONFIGURED: FALSE -->
-        <param name="CompressAsync" value="true"/>
-        <!-- Backup Location:
-             DEFAULT IF NOT CONFIGURED: same dir as log file -->
-        <param name="backupFilesToPath" value="${QPID_WORK}/backup/log"/>
-
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="%d %-5p [%t] (%c{2}) - %m%n"/>
-        </layout>
-    </appender>
 
     <appender class="org.apache.log4j.FileAppender" name="FileAppender">
         <param name="File" value="${QPID_WORK}/log/${logprefix}qpid${logsuffix}.log"/>
@@ -87,7 +37,6 @@
         </layout>
     </appender>
 
-    <!-- Provide warnings to standard output -->
     <logger additivity="true" name="org.apache.qpid">
         <level value="info"/>
     </logger>
@@ -113,11 +62,15 @@
         <level value="warn"/>
     </logger>
 
+    <logger additivity="true" name="org.apache.qpid.jmschaos">
+      <level value="debug"/>
+      <appender-ref ref="STDOUT"/>
+    </logger>
+
     <!-- Log all info events to file -->
     <root>
         <level value="info"/>
         <appender-ref ref="FileAppender"/>
-        <!--appender-ref ref="ArchivingFileAppender"/-->
     </root>
 
 </log4j:configuration>

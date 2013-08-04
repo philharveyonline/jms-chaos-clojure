@@ -79,7 +79,7 @@
         (with-open [consumer (.createConsumer session (.createQueue session queue-name))]
           (do-for-at-most
             (/ duration 3)
-            (fn [] (.receive consumer duration))))))))
+            (fn [] (.getJMSMessageID (.receive consumer duration)))))))))
 
 
 
@@ -99,16 +99,11 @@
         
         (let [producer-futures (doall (take 5 (repeatedly (fn [] (future (produce connection))))))
               consumer-futures (doall (take 5 (repeatedly (fn [] (future (consume connection))))))]
-          (let [messages-produced (flatten (map deref producer-futures))]
-            (info "Messages produced: " messages-produced)))
-        
-        (time
-        (doseq [producer-future (doall (take 5 (repeatedly
-                                                 (fn [] (future (produce connection))))))]
-          (info "Summary:"
-                   (count @producer-future)
-                   "producers produced"
-                   (count (flatten @producer-future)) "messages"))))
+          (letfn [(get-messages
+                    [futures]
+                    ((comp sort flatten (partial map deref)) futures))]
+            (info "Messages produced: " (get-messages producer-futures))
+            (info "Messages consumed: " (get-messages consumer-futures)))))
       
       (finally
         (delete-queue)
